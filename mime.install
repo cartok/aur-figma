@@ -1,0 +1,48 @@
+pre_install() {
+    if ! [[ $(pacman -Qqs xdg-utils) || $(pacman -Qqs xdg-utils-hanldr) ]]; then
+        echo "Install either 'xdg-utils' or 'xdg-utils-handlr' before running this installation, if you"
+        echo "want to have MIME configured automatically. This has to be done in order to open the figma"
+        echo "app instead of the browser when opening figma URLs."
+    fi
+}
+
+post_install() {
+    # Set default application
+    if [[ $(pacman -Qqs xdg-utils-handlr) ]]; then
+        runuser -u "${SUDO_USER}" -- handlr set x-scheme-handler/figma figma-linux.desktop
+    elif [[ $(pacman -Qqs xdg-utils) ]]; then
+        runuser -u "${SUDO_USER}" -- xdg-mime default figma-linux.desktop x-scheme-handler/figma
+    fi
+}
+
+pre_remove() {
+    if [[ $(pacman -Qqs xdg-utils-handlr) ]]; then
+        # Needed to use `pre_remove` cause handlr won't remove the entry if the linked desktop file
+        # does not exist, but it still returns exit code 0 opposed to the `set` and `add` commands.
+        # See this as a workaround.
+        runuser -u "${SUDO_USER}" -- handlr unset x-scheme-handler/figma
+    else
+        local POTENTIAL_MIME_FILES=(
+            "/home/${SUDO_USER}/.config/mimeapps.list"
+            "/usr/share/applications/mimeapps.list"
+            "/usr/local/share/applications"
+        )
+        local CONFIRMED_MIME_FILES=()
+
+        for FILE in "${POTENTIAL_MIME_FILES[@]}"; do
+            [[ -f "${FILE}" ]] && CONFIRMED_MIME_FILES+=("${FILE}")
+        done
+
+        for FILE in "${CONFIRMED_MIME_FILES[@]}"; do
+            sed -i '/figma-linux.desktop/d' "${FILE}"
+        done
+    fi
+}
+
+pre_upgrade() {
+    pre_install "$1"
+}
+
+post_upgrade() {
+    post_install "$1"
+}

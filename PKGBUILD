@@ -10,10 +10,11 @@ arch=(x86_64 aarch64)
 url="https://github.com/Figma-linux/figma-linux"
 license=(GPL2)
 depends=(fuse2 zlib hicolor-icon-theme)
-makedepends=(xdg-utils)
+optdepends=(xdg-utils xdg-utils-handlr)
 provides=(figma-linux)
 conflicts=(figma-linux)
 options=(!strip)
+install=mime.install
 source=(figma-linux.desktop
         24x24.png
         36x36.png
@@ -52,7 +53,4 @@ package() {
 
 	# Install binary
 	install -Dm755 "$_appimage" "$pkgdir/usr/bin/figma-linux"
-
-    # This is required for browser login to work
-    xdg-mime default figma-linux.desktop x-scheme-handler/figma
 }
